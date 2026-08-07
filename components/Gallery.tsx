@@ -35,7 +35,9 @@ export default function Gallery({
   const albums = useMemo(() => {
     const seen = new Set<string>();
     for (const p of items) if (p.album) seen.add(p.album);
-    return [...seen];
+    return [...seen].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+    );
   }, [items]);
 
   const visibleItems = useMemo(

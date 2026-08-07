@@ -142,5 +142,7 @@ export async function listAlbums(): Promise<string[]> {
   for (const p of current) {
     if (p.album) seen.add(p.album);
   }
-  return [...seen];
+  return [...seen].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+  );
 }
