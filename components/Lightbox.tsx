@@ -113,13 +113,13 @@ export default function Lightbox({
               onKeyDown={(e) => {
                 if (e.key === "Escape") setEditing(false);
               }}
-              className="mt-3 w-full resize-none rounded-sm bg-white/5 px-2 py-2 font-hand text-xl leading-tight text-white outline-none placeholder:text-white/40"
+              className="mt-3 w-full resize-none rounded-sm bg-white/5 px-2 py-2 font-hand text-base leading-snug text-white outline-none placeholder:text-white/40"
             />
           ) : (
             <p
               role={authed ? "button" : undefined}
               onClick={() => authed && setEditing(true)}
-              className={`mt-3 whitespace-pre-wrap font-hand text-xl leading-tight ${
+              className={`mt-3 whitespace-pre-wrap font-hand text-base leading-snug ${
                 photo.caption ? "text-white/90" : "text-white/40"
               } ${authed ? "cursor-pointer hover:text-white" : ""}`}
             >
