@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Reenie_Beanie } from "next/font/google";
 import "./globals.css";
 
 const display = Fraunces({
@@ -21,6 +21,12 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+const hand = Reenie_Beanie({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-hand",
+});
+
 export const metadata: Metadata = {
   title: "album",
   description: "a personal photo album",
@@ -34,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${display.variable} ${body.variable} ${mono.variable} flex min-h-screen flex-col bg-paper text-ink font-body antialiased`}
+        className={`${display.variable} ${body.variable} ${mono.variable} ${hand.variable} flex min-h-screen flex-col bg-paper text-ink font-body antialiased`}
       >
         <div className="flex-1">{children}</div>
         <footer className="border-t border-line py-6 text-center">
