@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE } from "@/lib/auth";
+import { AUTH_COOKIE, isValidPasscode } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { passcode } = await req.json();
 
-  if (!passcode || passcode !== process.env.ALBUM_PASSCODE) {
+  if (!passcode || !isValidPasscode(passcode)) {
     return NextResponse.json({ error: "Wrong passcode" }, { status: 401 });
   }
 
