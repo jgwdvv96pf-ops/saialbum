@@ -18,6 +18,7 @@ const config: Config = {
         display: ["var(--font-display)"],
         body: ["var(--font-body)"],
         mono: ["var(--font-mono)"],
+        hand: ["var(--font-hand)"],
       },
     },
   },
