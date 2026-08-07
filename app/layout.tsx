@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono, Caveat } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Reenie_Beanie } from "next/font/google";
 import "./globals.css";
 
 const display = Fraunces({
@@ -21,9 +21,9 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
-const hand = Caveat({
+const hand = Reenie_Beanie({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400"],
   variable: "--font-hand",
 });
 
