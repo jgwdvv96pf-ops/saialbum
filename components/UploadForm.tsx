@@ -7,6 +7,8 @@ type Item = {
   file: File;
   status: "queued" | "compressing" | "uploading" | "done" | "error";
   error?: string;
+  takenAt?: string;
+  location?: string;
 };
 
 const RAW_EXTENSIONS = [
@@ -74,10 +76,56 @@ async function processImage(
   };
 }
 
-export default function UploadForm() {
+// Reads EXIF off the *original* file before we touch it — the canvas
+// re-compression step strips all metadata, so this has to happen
+// first. Best-effort: any failure here just means we fall back to
+// upload time / no location, same as before this feature existed.
+async function extractExif(
+  file: File
+): Promise<{ takenAt?: string; location?: string }> {
+  try {
+    const exifr = (await import("exifr")).default;
+    const data = await exifr.parse(file, [
+      "DateTimeOriginal",
+      "CreateDate",
+      "latitude",
+      "longitude",
+    ]);
+    if (!data) return {};
+
+    const date: Date | undefined = data.DateTimeOriginal || data.CreateDate;
+    const takenAt = date ? date.toISOString() : undefined;
+
+    let location: string | undefined;
+    if (typeof data.latitude === "number" && typeof data.longitude === "number") {
+      try {
+        const res = await fetch(
+          `/api/geocode?lat=${data.latitude}&lon=${data.longitude}`
+        );
+        if (res.ok) {
+          const geo = await res.json();
+          location = geo.location || undefined;
+        }
+      } catch {
+        // no network / geocode failed — skip, not critical
+      }
+    }
+
+    return { takenAt, location };
+  } catch {
+    return {};
+  }
+}
+
+export default function UploadForm({
+  existingAlbums = [],
+}: {
+  existingAlbums?: string[];
+}) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [album, setAlbum] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addFiles = useCallback((files: FileList | null) => {
@@ -111,13 +159,22 @@ export default function UploadForm() {
     );
 
     try {
-      const { file: fileToUpload, width, height } = await processImage(
-        item.file
-      );
+      const [{ file: fileToUpload, width, height }, exif] = await Promise.all([
+        processImage(item.file),
+        extractExif(item.file),
+      ]);
 
       setItems((prev) =>
         prev.map((it, idx) =>
-          idx === i ? { ...it, status: "uploading", file: fileToUpload } : it
+          idx === i
+            ? {
+                ...it,
+                status: "uploading",
+                file: fileToUpload,
+                takenAt: exif.takenAt,
+                location: exif.location,
+              }
+            : it
         )
       );
 
@@ -144,10 +201,26 @@ export default function UploadForm() {
       const manifestRes = await fetch("/api/manifest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, width, height }),
+        body: JSON.stringify({
+          key,
+          width,
+          height,
+          takenAt: exif.takenAt,
+          album: album.trim() || undefined,
+        }),
       });
       if (!manifestRes.ok) {
         throw new Error("uploaded, but failed to save to the album");
+      }
+
+      // If we resolved a location from GPS, save it as a follow-up
+      // patch — the create endpoint keeps a stable, minimal shape.
+      if (exif.location) {
+        await fetch("/api/manifest", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, location: exif.location }),
+        }).catch(() => {});
       }
 
       setItems((prev) =>
@@ -186,6 +259,25 @@ export default function UploadForm() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div>
+        <label className="mb-1 block font-mono text-xs text-fog">
+          album (optional — applies to this batch)
+        </label>
+        <input
+          type="text"
+          list="album-suggestions"
+          value={album}
+          onChange={(e) => setAlbum(e.target.value)}
+          placeholder="e.g. london, gr iv, 2026"
+          className="w-full rounded-sm border border-line bg-transparent px-3 py-2 font-mono text-xs text-ink outline-none focus:border-ink"
+        />
+        <datalist id="album-suggestions">
+          {existingAlbums.map((a) => (
+            <option key={a} value={a} />
+          ))}
+        </datalist>
+      </div>
+
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
@@ -246,6 +338,19 @@ export default function UploadForm() {
                   {item.error}
                 </span>
               )}
+              {(item.takenAt || item.location) &&
+                item.status !== "error" && (
+                  <span className="font-mono text-[11px] text-fog">
+                    {item.takenAt &&
+                      new Date(item.takenAt).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    {item.takenAt && item.location ? " · " : ""}
+                    {item.location}
+                  </span>
+                )}
             </li>
           ))}
         </ul>

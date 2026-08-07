@@ -13,6 +13,8 @@ export type Photo = {
   height: number;
   takenAt: string;
   location?: string;
+  caption?: string;
+  album?: string;
   order: number;
 };
 
@@ -68,7 +70,9 @@ async function putManifest(entries: Omit<Photo, "url">[]) {
   );
 }
 
-export async function addToManifest(entry: Omit<Photo, "url" | "order">) {
+export async function addToManifest(
+  entry: Omit<Photo, "url" | "order" | "album"> & { album?: string }
+) {
   const current = await getManifest();
   const stripped = current.map(({ url, ...rest }) => rest);
   // New photos go to the front — lower order number sorts first.
@@ -111,11 +115,34 @@ export async function reorderManifest(keys: string[]) {
   await putManifest(reordered);
 }
 
-export async function updateLocation(key: string, location: string) {
+const EDITABLE_FIELDS = ["location", "caption", "album"] as const;
+type EditableField = (typeof EDITABLE_FIELDS)[number];
+
+export async function updatePhotoField(
+  key: string,
+  field: EditableField,
+  value: string
+) {
   const current = await getManifest();
   const stripped = current.map(({ url, ...rest }) => rest);
   const updated = stripped.map((p) =>
-    p.key === key ? { ...p, location } : p
+    p.key === key ? { ...p, [field]: value } : p
   );
   await putManifest(updated);
+}
+
+export function isEditableField(field: string): field is EditableField {
+  return (EDITABLE_FIELDS as readonly string[]).includes(field);
+}
+
+// Every distinct album name currently in use, in first-seen order.
+export async function listAlbums(): Promise<string[]> {
+  const current = await getManifest();
+  const seen = new Set<string>();
+  for (const p of current) {
+    if (p.album) seen.add(p.album);
+  }
+  return [...seen].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+  );
 }

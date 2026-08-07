@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import type { Photo } from "@/lib/manifest";
 import Lightbox from "@/components/Lightbox";
@@ -27,9 +27,26 @@ export default function Gallery({
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [activeAlbum, setActiveAlbum] = useState<string>("all");
 
   const dragKey = useRef<string | null>(null);
   const dragging = useRef(false);
+
+  const albums = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of items) if (p.album) seen.add(p.album);
+    return [...seen].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+    );
+  }, [items]);
+
+  const visibleItems = useMemo(
+    () =>
+      activeAlbum === "all"
+        ? items
+        : items.filter((p) => p.album === activeAlbum),
+    [items, activeAlbum]
+  );
 
   async function handleDelete(e: React.MouseEvent, key: string) {
     e.stopPropagation();
@@ -92,124 +109,171 @@ export default function Gallery({
     }
   }
 
-  async function handleLocationSave(key: string, location: string) {
-    setEditingKey(null);
+  async function handleFieldSave(
+    key: string,
+    field: "location" | "album" | "caption",
+    value: string
+  ) {
     setItems((prev) =>
-      prev.map((p) => (p.key === key ? { ...p, location } : p))
+      prev.map((p) => (p.key === key ? { ...p, [field]: value } : p))
     );
     try {
       await fetch("/api/manifest", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, location }),
+        body: JSON.stringify({ key, [field]: value }),
       });
     } catch {
-      alert("Couldn't save that location. Try again.");
+      alert(`Couldn't save that ${field}. Try again.`);
     }
   }
 
   return (
     <>
+      {albums.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveAlbum("all")}
+            className={`font-mono text-xs underline-offset-4 transition ${
+              activeAlbum === "all"
+                ? "text-ink underline decoration-ink"
+                : "text-fog underline decoration-line hover:decoration-ink"
+            }`}
+          >
+            all
+          </button>
+          {albums.map((a) => (
+            <button
+              key={a}
+              onClick={() => setActiveAlbum(a)}
+              className={`font-mono text-xs underline-offset-4 transition ${
+                activeAlbum === a
+                  ? "text-ink underline decoration-ink"
+                  : "text-fog underline decoration-line hover:decoration-ink"
+              }`}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+      )}
+
       {authed && (
         <p className="mb-4 font-mono text-[11px] text-fog">
-          drag photos to reorder · click the location to edit it
+          drag photos to reorder · click the location to edit info
           {savingOrder && " · saving…"}
         </p>
       )}
 
       <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
-        {items.map((photo, i) => (
-          <div
-            key={photo.key}
-            draggable={authed}
-            onDragStart={() => handleDragStart(photo.key)}
-            onDragOver={(e) => handleDragOver(e, photo.key)}
-            onDragEnd={handleDragEnd}
-            className={`group relative mb-3 block w-full overflow-hidden break-inside-avoid rounded-sm bg-line text-left sm:mb-4 ${
-              authed ? "cursor-grab active:cursor-grabbing" : ""
-            } ${dragging.current && dragKey.current === photo.key ? "opacity-50" : ""}`}
-          >
-            <button
-              type="button"
-              onClick={() => setOpenIndex(i)}
-              className="block w-full"
-              style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
+        {visibleItems.map((photo) => {
+          const i = items.findIndex((p) => p.key === photo.key);
+          return (
+            <div
+              key={photo.key}
+              draggable={authed}
+              onDragStart={() => handleDragStart(photo.key)}
+              onDragOver={(e) => handleDragOver(e, photo.key)}
+              onDragEnd={handleDragEnd}
+              className={`group relative mb-3 block w-full overflow-hidden break-inside-avoid rounded-sm bg-line text-left sm:mb-4 ${
+                authed ? "cursor-grab active:cursor-grabbing" : ""
+              } ${dragging.current && dragKey.current === photo.key ? "opacity-50" : ""}`}
             >
-              <Image
-                src={photo.url}
-                alt=""
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-cover transition duration-500 group-hover:scale-[1.03]"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-              <span className="pointer-events-none absolute bottom-2 left-2 font-mono text-[10px] text-white opacity-0 transition group-hover:opacity-100">
-                {formatDate(photo.takenAt)}
-                {photo.location ? ` · ${photo.location}` : ""}
-              </span>
-            </button>
-
-            {authed && editingKey === photo.key && (
-              <form
-                onClick={(e) => e.stopPropagation()}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const input = e.currentTarget.elements.namedItem(
-                    "location"
-                  ) as HTMLInputElement;
-                  handleLocationSave(photo.key, input.value.trim());
-                }}
-                className="absolute inset-x-2 bottom-2 z-10"
+              <button
+                type="button"
+                onClick={() => setOpenIndex(i)}
+                className="block w-full"
+                style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
               >
-                <input
-                  name="location"
-                  autoFocus
-                  defaultValue={photo.location || ""}
-                  placeholder="add a location"
-                  onBlur={(e) =>
-                    handleLocationSave(photo.key, e.target.value.trim())
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") setEditingKey(null);
-                  }}
-                  className="w-full rounded-sm bg-black/70 px-2 py-1 font-mono text-[10px] text-white outline-none backdrop-blur placeholder:text-white/50"
+                <Image
+                  src={photo.url}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition duration-500 group-hover:scale-[1.03]"
                 />
-              </form>
-            )}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+                <span className="pointer-events-none absolute bottom-2 left-2 font-mono text-[10px] text-white opacity-0 transition group-hover:opacity-100">
+                  {formatDate(photo.takenAt)}
+                  {photo.location ? ` · ${photo.location}` : ""}
+                </span>
+              </button>
 
-            {authed && editingKey !== photo.key && (
-              <span
-                role="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingKey(photo.key);
-                }}
-                className="absolute bottom-2 left-2 z-10 rounded-sm bg-black/50 px-2 py-1 font-mono text-[10px] text-white opacity-0 backdrop-blur transition hover:bg-black/70 group-hover:opacity-100"
-              >
-                {photo.location || "add location"}
-              </span>
-            )}
+              {authed && editingKey === photo.key && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute inset-x-2 bottom-2 z-10 flex flex-col gap-1"
+                >
+                  <input
+                    autoFocus
+                    defaultValue={photo.location || ""}
+                    placeholder="location"
+                    onBlur={(e) =>
+                      handleFieldSave(photo.key, "location", e.target.value.trim())
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setEditingKey(null);
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    className="w-full rounded-sm bg-black/70 px-2 py-1 font-mono text-[10px] text-white outline-none backdrop-blur placeholder:text-white/50"
+                  />
+                  <input
+                    defaultValue={photo.album || ""}
+                    placeholder="album"
+                    onBlur={(e) =>
+                      handleFieldSave(photo.key, "album", e.target.value.trim())
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setEditingKey(null);
+                      if (e.key === "Enter") {
+                        (e.target as HTMLInputElement).blur();
+                        setEditingKey(null);
+                      }
+                    }}
+                    className="w-full rounded-sm bg-black/70 px-2 py-1 font-mono text-[10px] text-white outline-none backdrop-blur placeholder:text-white/50"
+                  />
+                </div>
+              )}
 
-            {authed && (
-              <span
-                role="button"
-                onClick={(e) => handleDelete(e, photo.key)}
-                className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 font-mono text-xs text-white opacity-0 backdrop-blur transition hover:bg-black/70 group-hover:opacity-100"
-                aria-label="Delete photo"
-              >
-                {deleting === photo.key ? "…" : "×"}
-              </span>
-            )}
-          </div>
-        ))}
+              {authed && editingKey !== photo.key && (
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingKey(photo.key);
+                  }}
+                  className="absolute bottom-2 left-2 z-10 rounded-sm bg-black/50 px-2 py-1 font-mono text-[10px] text-white opacity-0 backdrop-blur transition hover:bg-black/70 group-hover:opacity-100"
+                >
+                  {photo.location || "add location"}
+                  {photo.album ? ` · ${photo.album}` : ""}
+                </span>
+              )}
+
+              {authed && (
+                <span
+                  role="button"
+                  onClick={(e) => handleDelete(e, photo.key)}
+                  className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 font-mono text-xs text-white opacity-0 backdrop-blur transition hover:bg-black/70 group-hover:opacity-100"
+                  aria-label="Delete photo"
+                >
+                  {deleting === photo.key ? "…" : "×"}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {openIndex !== null && (
         <Lightbox
           photos={items}
           index={openIndex}
+          authed={authed}
           onClose={() => setOpenIndex(null)}
           onNavigate={setOpenIndex}
+          onCaptionSave={(key, caption) =>
+            handleFieldSave(key, "caption", caption)
+          }
         />
       )}
     </>

@@ -1,7 +1,12 @@
 import UploadForm from "@/components/UploadForm";
 import LockButton from "@/components/LockButton";
+import { listAlbums } from "@/lib/manifest";
 
-export default function UploadPage() {
+export const dynamic = "force-dynamic";
+
+export default async function UploadPage() {
+  const existingAlbums = await listAlbums();
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-14">
       <div className="mb-10 flex items-baseline justify-between border-b border-line pb-6">
@@ -11,7 +16,7 @@ export default function UploadPage() {
         <LockButton />
       </div>
       <h1 className="mb-8 font-display text-3xl italic">upload</h1>
-      <UploadForm />
+      <UploadForm existingAlbums={existingAlbums} />
     </main>
   );
 }
