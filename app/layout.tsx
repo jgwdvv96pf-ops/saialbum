@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono, Permanent_Marker } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Caveat } from "next/font/google";
 import "./globals.css";
 
 const display = Fraunces({
@@ -21,9 +21,9 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
-const hand = Permanent_Marker({
+const hand = Caveat({
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["500", "600", "700"],
   variable: "--font-hand",
 });
 
