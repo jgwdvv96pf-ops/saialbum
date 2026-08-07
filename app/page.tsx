@@ -11,7 +11,7 @@ export default async function HomePage() {
     <main className="mx-auto max-w-[1400px] px-6 py-10 sm:px-10 sm:py-14">
       <header className="mb-10 flex items-baseline justify-between border-b border-line pb-6 sm:mb-14">
         <h1 className="font-display text-3xl italic tracking-tight sm:text-4xl">
-          album
+          photos by saia
         </h1>
         <div className="flex items-baseline gap-4">
           <span className="font-mono text-xs text-fog">
