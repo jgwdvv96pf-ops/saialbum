@@ -1,4 +1,4 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const BUCKET = process.env.R2_BUCKET_NAME as string;
 
@@ -17,4 +17,37 @@ export const r2 = new S3Client({
 export function publicUrlFor(key: string) {
   const base = (process.env.R2_PUBLIC_URL as string).replace(/\/$/, "");
   return `${base}/${key}`;
+}
+
+async function streamToString(stream: any): Promise<string> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+// Small generic JSON blob store on top of R2 — used for the shop's
+// product and order manifests, same idea as the photo manifest but
+// without needing photo-specific fields baked in.
+export async function getJson<T>(key: string, fallback: T): Promise<T> {
+  try {
+    const res = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const body = await streamToString(res.Body);
+    return JSON.parse(body) as T;
+  } catch (err: any) {
+    if (err.name === "NoSuchKey") return fallback;
+    throw err;
+  }
+}
+
+export async function putJson<T>(key: string, value: T) {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: JSON.stringify(value),
+      ContentType: "application/json",
+    })
+  );
 }
