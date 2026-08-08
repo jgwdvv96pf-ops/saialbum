@@ -1,5 +1,5 @@
 import { getJson, putJson } from "@/lib/r2";
-import { markProductsSold } from "@/lib/shop";
+import { markProductsSold, markProductsAvailable } from "@/lib/shop";
 
 const ORDERS_KEY = "shop-orders.json";
 
@@ -45,21 +45,41 @@ export async function addOrder(
   return order;
 }
 
+const SOLD_STATUSES: OrderStatus[] = ["confirmed", "fulfilled"];
+
 export async function updateOrderStatus(
   id: string,
   status: OrderStatus
 ): Promise<void> {
   const current = await getJson<Order[]>(ORDERS_KEY, []);
   const order = current.find((o) => o.id === id);
+  const previousStatus = order?.status;
   const updated = current.map((o) => (o.id === id ? { ...o, status } : o));
   await putJson(ORDERS_KEY, updated);
 
-  // Confirming or fulfilling an order marks its items sold — these
-  // are one-of-a-kind pieces, not stocked inventory. Cancelling does
-  // NOT auto-unmark sold, since another order might have since
-  // claimed the same item; unsell manually from the product if needed.
-  if (order && (status === "confirmed" || status === "fulfilled")) {
+  if (!order) return;
+
+  const wasSold = previousStatus && SOLD_STATUSES.includes(previousStatus);
+  const isSold = SOLD_STATUSES.includes(status);
+
+  if (!wasSold && isSold) {
+    // Newly confirmed/fulfilled — claim the items.
     await markProductsSold(order.items.map((i) => i.productId));
+  } else if (wasSold && !isSold) {
+    // Moved back to new/cancelled — release the items, but only
+    // ones no *other* active order still has claimed (e.g. if two
+    // orders somehow both reference the same item).
+    const stillClaimed = new Set<string>();
+    for (const o of updated) {
+      if (o.id === id) continue;
+      if (SOLD_STATUSES.includes(o.status)) {
+        o.items.forEach((i) => stillClaimed.add(i.productId));
+      }
+    }
+    const toRelease = order.items
+      .map((i) => i.productId)
+      .filter((pid) => !stillClaimed.has(pid));
+    if (toRelease.length) await markProductsAvailable(toRelease);
   }
 }
 

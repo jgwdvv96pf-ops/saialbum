@@ -79,6 +79,18 @@ export async function markProductsSold(ids: string[]): Promise<void> {
   await putJson(PRODUCTS_KEY, updated);
 }
 
+// Opposite of markProductsSold — used when an order is reverted away
+// from confirmed/fulfilled (e.g. accidentally set, or the buyer
+// backed out), so the item goes back on sale.
+export async function markProductsAvailable(ids: string[]): Promise<void> {
+  const current = await getJson<StoredProduct[]>(PRODUCTS_KEY, []);
+  const idSet = new Set(ids);
+  const updated = current.map((p) =>
+    idSet.has(p.id) ? { ...p, sold: false } : p
+  );
+  await putJson(PRODUCTS_KEY, updated);
+}
+
 export async function deleteProduct(id: string): Promise<void> {
   const current = await getJson<StoredProduct[]>(PRODUCTS_KEY, []);
   const toDelete = current.find((p) => p.id === id);
