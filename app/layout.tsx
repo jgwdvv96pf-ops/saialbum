@@ -43,7 +43,14 @@ export default function RootLayout({
         className={`${display.variable} ${body.variable} ${mono.variable} ${hand.variable} flex min-h-screen flex-col bg-paper text-ink font-body antialiased`}
       >
         <div className="flex-1">{children}</div>
-        <footer className="border-t border-line py-6 text-center">
+        <footer className="relative border-t border-line py-6 text-center">
+          <a
+            href="/shop"
+            aria-label="shop"
+            className="absolute bottom-6 left-6 font-mono text-xs text-fog/50 transition hover:text-ink"
+          >
+            !
+          </a>
           <p className="font-display text-sm italic text-fog">
             to love is to be loved
           </p>
