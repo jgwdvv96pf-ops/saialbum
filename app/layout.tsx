@@ -47,7 +47,7 @@ export default function RootLayout({
           <a
             href="/shop"
             aria-label="shop"
-            className="absolute bottom-6 left-6 font-mono text-xs text-fog/50 transition hover:text-ink"
+            className="absolute bottom-6 left-6 font-mono text-sm text-fog transition hover:text-ink"
           >
             !
           </a>
