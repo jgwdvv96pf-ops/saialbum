@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
-import { pickPrize } from "@/lib/earn/spin";
+import { getOrCreateExternalId, getOrCreateUser } from "@/lib/earn/identity";
+import { spendCreditAndSpin } from "@/lib/earn/ledger";
 
-// PLACEHOLDER: this endpoint currently has no auth, no spin-credit
-// check, and no persistence — anyone can call it for an unlimited
-// number of spins. That's fine for prototyping the wheel mechanic,
-// but before this is real: gate it behind a logged-in user, verify
-// (and deduct) a spin credit atomically in Postgres, and record the
-// result in a transaction log before responding.
 export async function POST() {
-  const { prize, index } = pickPrize();
-  return NextResponse.json({ prize, index });
+  const externalId = await getOrCreateExternalId();
+  const user = await getOrCreateUser(externalId);
+
+  try {
+    const result = await spendCreditAndSpin(user.id);
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Spin failed";
+    const status = message === "No spin credits" ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
