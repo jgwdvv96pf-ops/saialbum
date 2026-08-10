@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getOrCreateExternalId, getOrCreateUser } from "@/lib/earn/identity";
+import { requireEarnUser } from "@/lib/earn/require-user";
 
 export async function GET() {
-  const externalId = await getOrCreateExternalId();
-  const user = await getOrCreateUser(externalId);
+  const result = await requireEarnUser();
+  if ("error" in result) return result.error;
+
   return NextResponse.json({
-    balance: user.balance,
-    spinCredits: user.spin_credits,
+    email: result.user.email,
+    balance: result.user.balance,
+    spinCredits: result.user.spin_credits,
   });
 }
