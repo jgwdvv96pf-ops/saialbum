@@ -27,20 +27,30 @@ export default function EarnPage() {
   const [pendingResult, setPendingResult] = useState<SpinResponse | null>(null);
   const [result, setResult] = useState<Prize | null>(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   async function loadMe() {
-    const res = await fetch("/api/earn/me");
-    if (res.status === 401) {
-      setSignedIn(false);
+    try {
+      const res = await fetch("/api/earn/me");
+      if (res.status === 401) {
+        setSignedIn(false);
+        setChecked(true);
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Request failed (${res.status})`);
+      }
+      const data = await res.json();
+      setEmail(data.email);
+      setPoints(data.balance);
+      setSpinCredits(data.spinCredits);
+      setSignedIn(true);
       setChecked(true);
-      return;
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load — try refreshing");
+      setChecked(true);
     }
-    const data = await res.json();
-    setEmail(data.email);
-    setPoints(data.balance);
-    setSpinCredits(data.spinCredits);
-    setSignedIn(true);
-    setChecked(true);
   }
 
   useEffect(() => {
@@ -93,6 +103,25 @@ export default function EarnPage() {
       <main className="mx-auto flex max-w-2xl flex-col items-center gap-4 px-6 py-24 text-center">
         <h1 className="font-display text-3xl italic">earn</h1>
         <p className="font-mono text-xs text-fog">loading…</p>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="mx-auto flex max-w-2xl flex-col items-center gap-4 px-6 py-24 text-center">
+        <h1 className="font-display text-3xl italic">earn</h1>
+        <p className="max-w-sm font-mono text-xs text-red-700">{loadError}</p>
+        <button
+          onClick={() => {
+            setLoadError("");
+            setChecked(false);
+            loadMe();
+          }}
+          className="font-mono text-xs text-ink underline decoration-line underline-offset-4 transition hover:decoration-ink"
+        >
+          try again
+        </button>
       </main>
     );
   }
