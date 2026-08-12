@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addNote, deleteNote, getNotesForPhoto } from "@/lib/notes";
+import { getPhotoByKey } from "@/lib/manifest";
 import { isAuthed } from "@/lib/auth";
+import { notifyNewNote } from "@/lib/discord-notes";
 
 export async function GET(req: NextRequest) {
   const photoKey = req.nextUrl.searchParams.get("photoKey");
@@ -21,6 +23,12 @@ export async function POST(req: NextRequest) {
   }
 
   const note = await addNote(photoKey, author.trim(), text.trim());
+
+  const photo = await getPhotoByKey(photoKey);
+  if (photo) {
+    await notifyNewNote(note, photo);
+  }
+
   return NextResponse.json({ ok: true, note });
 }
 

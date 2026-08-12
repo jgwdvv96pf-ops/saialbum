@@ -70,6 +70,11 @@ async function putManifest(entries: Omit<Photo, "url">[]) {
   );
 }
 
+export async function getPhotoByKey(key: string): Promise<Photo | null> {
+  const photos = await getManifest();
+  return photos.find((p) => p.key === key) || null;
+}
+
 export async function addToManifest(
   entry: Omit<Photo, "url" | "order" | "album"> & { album?: string }
 ) {
