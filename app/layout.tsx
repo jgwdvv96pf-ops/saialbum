@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono, Reenie_Beanie } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const display = Fraunces({
@@ -55,6 +56,7 @@ export default function RootLayout({
             to love is to be loved
           </p>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
