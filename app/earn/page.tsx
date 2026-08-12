@@ -153,11 +153,17 @@ export default function EarnPage() {
         watch an ad, get a spin, win points
       </p>
 
-      <div className="mx-auto mt-3 w-fit rounded-sm border border-line px-4 py-2">
+      <div className="mx-auto mt-3 flex w-fit items-center gap-3 rounded-sm border border-line px-4 py-2">
         <p className="font-mono text-xs text-fog">
           balance: <span className="text-ink">{points} pts</span> · spins:{" "}
           <span className="text-ink">{spinCredits}</span>
         </p>
+        <a
+          href="/earn/redeem"
+          className="font-mono text-xs text-ink underline decoration-line underline-offset-4 transition hover:decoration-ink"
+        >
+          redeem →
+        </a>
       </div>
 
       <div className="mt-10 flex justify-center">
