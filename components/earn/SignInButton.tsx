@@ -23,8 +23,11 @@ export default function SignInButton({ onSignedIn }: { onSignedIn: () => void })
       if (!res.ok) throw new Error("Failed to establish session");
 
       onSignedIn();
-    } catch {
-      setError("Sign-in failed — try again");
+    } catch (err: any) {
+      console.error("[sign-in error]", err);
+      // Firebase errors carry a `.code` like "auth/unauthorized-domain" —
+      // much more useful than a generic message for figuring out setup issues.
+      setError(err?.code || err?.message || "Sign-in failed — try again");
     } finally {
       setLoading(false);
     }
