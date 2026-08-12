@@ -8,9 +8,14 @@ export default async function EarnAdminPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-14">
-      <a href="/earn" className="font-mono text-xs text-fog transition hover:text-ink">
-        ← back to earn
-      </a>
+      <div className="flex items-baseline justify-between">
+        <a href="/earn" className="font-mono text-xs text-fog transition hover:text-ink">
+          ← back to earn
+        </a>
+        <a href="/earn/admin/points" className="font-mono text-xs text-fog transition hover:text-ink">
+          adjust points →
+        </a>
+      </div>
       <h1 className="mb-8 mt-6 font-display text-3xl italic">redemptions</h1>
       <RedemptionsAdmin redemptions={redemptions} />
     </main>

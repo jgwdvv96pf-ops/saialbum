@@ -54,5 +54,14 @@ create table if not exists redemptions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists point_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id),
+  points integer not null, -- positive (giveaway) or negative (correction)
+  reason text,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists redemptions_user_id_idx on redemptions(user_id);
 create index if not exists redemptions_status_idx on redemptions(status);
+create index if not exists point_adjustments_user_id_idx on point_adjustments(user_id);
