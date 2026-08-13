@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono, Reenie_Beanie } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const display = Fraunces({
@@ -57,6 +58,7 @@ export default function RootLayout({
           </p>
         </footer>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
