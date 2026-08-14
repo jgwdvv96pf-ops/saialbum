@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeAuthorization } from "@/lib/mail/tokens";
-import { isAuthed } from "@/lib/auth";
 
+// Deliberately no passcode check here — Zoho's ?code=... is
+// single-use, short-lived, and only ever issued after authorizing on
+// Zoho's own screen against this app's client_id/secret, so it's not
+// forgeable. A passcode gate here previously redirected to /login on
+// a cold session, which dropped the code entirely and silently broke
+// the whole connect flow.
 export async function GET(req: NextRequest) {
-  if (!(await isAuthed())) {
-    return NextResponse.redirect(new URL("/login?next=/mail/connect", req.url));
-  }
-
   const code = req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
 
