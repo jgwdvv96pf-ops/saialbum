@@ -80,7 +80,7 @@ export default function Wheel({
                   y={labelPos.y}
                   fill="#FAFAF7"
                   fontSize="10"
-                  fontFamily="var(--font-mono)"
+                  fontFamily="'JetBrains Mono', monospace"
                   textAnchor="middle"
                   transform={`rotate(${mid}, ${labelPos.x}, ${labelPos.y})`}
                 >

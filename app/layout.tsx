@@ -1,33 +1,24 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono, Reenie_Beanie } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+// Self-hosted fonts instead of next/font/google — the Google Fonts
+// CSS endpoint occasionally fails to respond in a way next/font can
+// parse during Vercel's build (a systemic fetch issue, not a config
+// problem — it failed identically for every font at once). Fontsource
+// bundles the actual font files into the build, so there's no
+// network dependency at build time at all.
+import "@fontsource/fraunces/400.css";
+import "@fontsource/fraunces/500.css";
+import "@fontsource/fraunces/400-italic.css";
+import "@fontsource/fraunces/500-italic.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource/reenie-beanie/400.css";
+
 import "./globals.css";
-
-const display = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
-});
-
-const body = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-body",
-});
-
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
-});
-
-const hand = Reenie_Beanie({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-hand",
-});
 
 export const metadata: Metadata = {
   title: "album",
@@ -41,9 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        className={`${display.variable} ${body.variable} ${mono.variable} ${hand.variable} flex min-h-screen flex-col bg-paper text-ink font-body antialiased`}
-      >
+      <body className="flex min-h-screen flex-col bg-paper text-ink font-body antialiased">
         <div className="flex-1">{children}</div>
         <footer className="relative border-t border-line py-6 text-center">
           <a
