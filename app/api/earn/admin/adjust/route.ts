@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { findUserByEmail, adjustPoints } from "@/lib/earn/adjustments";
+import { notifyPointAdjustment } from "@/lib/earn/discord-adjustments";
 
 export async function POST(req: NextRequest) {
   if (!(await isAuthed())) {
@@ -20,7 +21,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await adjustPoints(user.id, delta, reason ? String(reason).slice(0, 300) : undefined);
+    const trimmedReason = reason ? String(reason).slice(0, 300) : undefined;
+    const result = await adjustPoints(user.id, delta, trimmedReason);
+
+    await notifyPointAdjustment({
+      email: user.email,
+      points: delta,
+      reason: trimmedReason ?? null,
+      newBalance: result.balance,
+    });
+
     return NextResponse.json({ ok: true, balance: result.balance });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Adjustment failed";
