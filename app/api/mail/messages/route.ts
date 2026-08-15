@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ content });
     }
 
-    const start = Number(req.nextUrl.searchParams.get("start") || "0");
+    const start = Number(req.nextUrl.searchParams.get("start") || "1");
     const limit = Number(req.nextUrl.searchParams.get("limit") || "25");
     const messages = await listMessages(folderId, { start, limit });
     return NextResponse.json({ messages });

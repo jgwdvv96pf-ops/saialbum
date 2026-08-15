@@ -2,10 +2,26 @@
 
 import { useState } from "react";
 
-export default function ComposeModal({ onClose }: { onClose: () => void }) {
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [content, setContent] = useState("");
+type Mode = "new" | "reply" | "forward";
+
+export default function ComposeModal({
+  mode = "new",
+  replyToMessageId,
+  initialTo = "",
+  initialSubject = "",
+  initialContent = "",
+  onClose,
+}: {
+  mode?: Mode;
+  replyToMessageId?: string;
+  initialTo?: string;
+  initialSubject?: string;
+  initialContent?: string;
+  onClose: () => void;
+}) {
+  const [to, setTo] = useState(initialTo);
+  const [subject, setSubject] = useState(initialSubject);
+  const [content, setContent] = useState(initialContent);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -14,10 +30,15 @@ export default function ComposeModal({ onClose }: { onClose: () => void }) {
     setError("");
     setSending(true);
     try {
-      const res = await fetch("/api/mail/send", {
+      const isReplyOrForward = mode === "reply" || mode === "forward";
+      const res = await fetch(isReplyOrForward ? "/api/mail/reply" : "/api/mail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to, subject, content: content.replace(/\n/g, "<br>") }),
+        body: JSON.stringify(
+          isReplyOrForward
+            ? { messageId: replyToMessageId, action: mode, to, subject, content }
+            : { to, subject, content: content.replace(/\n/g, "<br>") }
+        ),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
@@ -29,6 +50,8 @@ export default function ComposeModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const title = mode === "reply" ? "reply" : mode === "forward" ? "forward" : "new message";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" onClick={onClose}>
       <form
@@ -37,7 +60,7 @@ export default function ComposeModal({ onClose }: { onClose: () => void }) {
         className="flex w-full max-w-lg flex-col gap-3 rounded-sm bg-paper p-6"
       >
         <div className="flex items-center justify-between">
-          <p className="font-display text-xl italic">new message</p>
+          <p className="font-display text-xl italic">{title}</p>
           <button
             type="button"
             onClick={onClose}
