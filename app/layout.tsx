@@ -20,9 +20,31 @@ import "@fontsource/reenie-beanie/400.css";
 
 import "./globals.css";
 
+const SITE_TITLE = "saia ; jin";
+const SITE_DESCRIPTION = "a personal archive by saia";
+
 export const metadata: Metadata = {
-  title: "saia ; jin",
-  description: "a personal archive by saia",
+  metadataBase: new URL("https://saiaj.in"),
+  title: {
+    default: SITE_TITLE,
+    template: `%s — ${SITE_TITLE}`,
+  },
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "https://saiaj.in",
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "https://saiaj.in",
+    siteName: "saiaj.in",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
