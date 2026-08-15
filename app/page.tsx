@@ -15,13 +15,13 @@ const structuredData = {
     {
       "@type": "Person",
       name: "saia",
-      alternateName: ["saiajin", "saiaj.in"],
+      alternateName: ["saiajin", "saia jin", "saiaj.in"],
       url: "https://saiaj.in",
     },
     {
       "@type": "WebSite",
       name: "saiaj.in",
-      alternateName: "saiajin",
+      alternateName: ["saiajin", "saia jin"],
       url: "https://saiaj.in",
     },
   ],
