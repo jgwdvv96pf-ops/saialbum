@@ -21,8 +21,8 @@ import "@fontsource/reenie-beanie/400.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "album",
-  description: "a personal photo album",
+  title: "saia ; jin",
+  description: "a personal archive by saia",
 };
 
 export default function RootLayout({
