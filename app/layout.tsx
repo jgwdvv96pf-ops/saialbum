@@ -21,7 +21,7 @@ import "@fontsource/reenie-beanie/400.css";
 import "./globals.css";
 
 const SITE_TITLE = "saia ; jin";
-const SITE_DESCRIPTION = "a personal archive by saia";
+const SITE_DESCRIPTION = "saia (saiajin) — a personal archive at saiaj.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://saiaj.in"),
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_TITLE}`,
   },
   description: SITE_DESCRIPTION,
+  keywords: ["saiajin", "saiaj.in", "saia"],
   alternates: {
     canonical: "https://saiaj.in",
   },
