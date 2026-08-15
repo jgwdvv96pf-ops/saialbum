@@ -8,12 +8,13 @@ const TOKEN_KEY = "mail-tokens.json";
 // different data center (e.g. https://accounts.zoho.eu, .in, .com.au, .jp).
 const ACCOUNTS_BASE_URL = process.env.ZOHO_ACCOUNTS_BASE_URL || "https://accounts.zoho.com";
 
-// Zoho's token response is *supposed* to include api_domain (the
-// region-correct host for API calls), but some accounts/regions
-// don't return it. Fall back to deriving it from the accounts domain
-// (accounts.zoho.X -> mail.zoho.X, same pattern Zoho itself uses),
-// or ZOHO_API_DOMAIN if set explicitly.
-function fallbackApiDomain(): string {
+// Zoho's token response includes api_domain, but that's the
+// *generic* Zoho API domain (e.g. www.zohoapis.eu, used by
+// CRM/Books/etc.) — Zoho Mail's API doesn't follow that convention
+// and lives at mail.zoho.{region} instead. So for Mail specifically,
+// always derive it from the accounts domain rather than trusting the
+// token response's api_domain field.
+function mailApiDomain(): string {
   if (process.env.ZOHO_API_DOMAIN) return process.env.ZOHO_API_DOMAIN;
   return ACCOUNTS_BASE_URL.replace("accounts.zoho", "mail.zoho");
 }
@@ -73,10 +74,9 @@ export async function completeAuthorization(code: string): Promise<void> {
     // already-used or expired code) instead of a non-2xx status.
     throw new Error(`Zoho token exchange returned no access_token: ${JSON.stringify(tokenData)}`);
   }
-  // api_domain is *supposed* to be region-correct — e.g.
-  // https://mail.zoho.com or https://mail.zoho.eu — but isn't always
-  // present in the response, so fall back if it's missing.
-  const apiDomain: string = tokenData.api_domain || fallbackApiDomain();
+  // Always use the Mail-specific domain, not tokenData.api_domain —
+  // see mailApiDomain() comment for why.
+  const apiDomain: string = mailApiDomain();
 
   const accountsRes = await fetch(`${apiDomain}/api/accounts`, {
     headers: { Authorization: `Zoho-oauthtoken ${tokenData.access_token}` },
