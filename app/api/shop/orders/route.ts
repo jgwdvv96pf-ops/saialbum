@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       title: product.title,
       price: product.price,
       qty: 1, // one-of-a-kind items — quantity is always 1
+      imageUrl: product.imageUrls[0],
     });
   }
 

@@ -9,6 +9,7 @@ export type OrderItem = {
   title: string;
   price: number;
   qty: number;
+  imageUrl?: string;
 };
 
 export type OrderStatus = "new" | "confirmed" | "fulfilled" | "cancelled";
