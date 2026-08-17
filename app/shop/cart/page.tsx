@@ -12,6 +12,7 @@ const CONTACT_PLATFORM = "Instagram";
 export default function CartPage() {
   const { items, remove, clear, total } = useCart();
   const [buyerName, setBuyerName] = useState("");
+  const [email, setEmail] = useState("");
   const [contact, setContact] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -30,6 +31,7 @@ export default function CartPage() {
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId })),
           buyerName,
+          email,
           contact,
           note,
         }),
@@ -54,8 +56,9 @@ export default function CartPage() {
           reference: <span className="text-ink">#{placedOrderId}</span>
         </p>
         <p className="max-w-sm font-mono text-sm text-fog">
-          message {CONTACT_PLATFORM} {CONTACT_HANDLE} with your reference
-          number to arrange payment and shipping/meetup.
+          a confirmation just went to your email. message {CONTACT_PLATFORM}{" "}
+          {CONTACT_HANDLE} with your reference number to arrange payment and
+          shipping/meetup.
         </p>
         <a
           href="/shop"
@@ -120,6 +123,14 @@ export default function CartPage() {
           value={buyerName}
           onChange={(e) => setBuyerName(e.target.value)}
           placeholder="name"
+          className="border-b border-line bg-transparent py-2 font-mono text-sm outline-none placeholder:text-fog focus:border-ink"
+        />
+        <input
+          required
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email (for your order confirmation)"
           className="border-b border-line bg-transparent py-2 font-mono text-sm outline-none placeholder:text-fog focus:border-ink"
         />
         <input

@@ -3,6 +3,7 @@ import { addOrder, getOrders, setDiscordMessageId } from "@/lib/orders";
 import { getProducts } from "@/lib/shop";
 import { isAuthed } from "@/lib/auth";
 import { postOrderMessage } from "@/lib/discord";
+import { sendOrderConfirmationEmail } from "@/lib/shop/order-email";
 
 export async function GET() {
   if (!(await isAuthed())) {
@@ -12,10 +13,12 @@ export async function GET() {
   return NextResponse.json({ orders });
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Deliberately public — anyone can place an order (this just records
 // intent to buy; you confirm and arrange payment over DM yourself).
 export async function POST(req: NextRequest) {
-  const { items, buyerName, contact, note } = await req.json();
+  const { items, buyerName, email, contact, note } = await req.json();
 
   if (
     !Array.isArray(items) ||
@@ -24,6 +27,9 @@ export async function POST(req: NextRequest) {
     !contact
   ) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (!email || !EMAIL_RE.test(String(email).trim())) {
+    return NextResponse.json({ error: "Valid email required" }, { status: 400 });
   }
 
   // Re-price and re-validate server-side against the live product
@@ -60,6 +66,7 @@ export async function POST(req: NextRequest) {
     items: orderItems,
     total,
     buyerName: String(buyerName).slice(0, 120),
+    email: String(email).trim().slice(0, 200),
     contact: String(contact).slice(0, 120),
     note: note ? String(note).slice(0, 500) : undefined,
   });
@@ -68,6 +75,8 @@ export async function POST(req: NextRequest) {
   if (messageId) {
     await setDiscordMessageId(order.id, messageId);
   }
+
+  await sendOrderConfirmationEmail(order);
 
   return NextResponse.json({ ok: true, order });
 }
