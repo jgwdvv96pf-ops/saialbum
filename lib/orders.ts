@@ -18,6 +18,7 @@ export type Order = {
   items: OrderItem[];
   total: number;
   buyerName: string;
+  email: string;
   contact: string; // whatever they gave — IG handle, phone, etc.
   note?: string;
   status: OrderStatus;

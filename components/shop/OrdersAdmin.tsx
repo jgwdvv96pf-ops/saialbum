@@ -101,7 +101,7 @@ export default function OrdersAdmin({ orders }: { orders: Order[] }) {
                   </span>
                 </div>
                 <p className="mt-1 font-mono text-sm text-ink">
-                  {order.buyerName} · {order.contact}
+                  {order.buyerName} · {order.email} · {order.contact}
                 </p>
                 <ul className="mt-2 flex flex-col gap-0.5">
                   {order.items.map((item, i) => (
