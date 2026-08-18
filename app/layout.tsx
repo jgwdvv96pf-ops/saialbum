@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import AnalyticsBeacon from "@/components/AnalyticsBeacon";
 
 // Self-hosted fonts instead of next/font/google — the Google Fonts
 // CSS endpoint occasionally fails to respond in a way next/font can
@@ -81,6 +82,7 @@ export default function RootLayout({
         </footer>
         <Analytics />
         <SpeedInsights />
+        <AnalyticsBeacon />
       </body>
     </html>
   );
