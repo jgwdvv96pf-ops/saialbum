@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import PlayingCard from "@/components/blackjack/Card";
+import PlayerSeat from "@/components/blackjack/PlayerSeat";
+import { getSeatPosition } from "@/components/blackjack/seatPositions";
 
 type Card = { rank: string; suit: string };
 type Hand = {
@@ -129,94 +131,112 @@ export default function BlackjackTable({ code }: { code: string }) {
         </div>
       </div>
 
-      {/* dealer area */}
-      <div className="mb-8 rounded-lg bg-ink px-6 py-8 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-paper/40">dealer</p>
-        <div className="mt-3 flex justify-center gap-2">
-          {round && round.status !== "betting" ? (
-            <>
-              {round.dealerHand.map((c, i) => (
-                <PlayingCard key={i} card={c} />
-              ))}
-              {!round.dealerHoleRevealed && <PlayingCard faceDown />}
-            </>
-          ) : (
-            <p className="font-mono text-xs text-paper/30">waiting for the next round…</p>
-          )}
-        </div>
-        {round?.dealerHoleRevealed && round.dealerTotal !== null && (
-          <p className="mt-2 font-mono text-xs text-paper/60">{round.dealerTotal}</p>
-        )}
-        {round?.dealerMessage && (
-          <p className="mt-4 font-display text-lg italic text-paper/90">"{round.dealerMessage}"</p>
-        )}
-      </div>
+      {/* table — oval + perspective tilt on larger screens, simple stack on mobile */}
+      <div className="mb-8 hidden sm:block">
+        <div className="relative mx-auto" style={{ perspective: "1400px" }}>
+          {/* decorative felt surface — purely visual, sits behind the
+              upright dealer/seat content so buttons and text never
+              get warped by the 3D transform */}
+          <div
+            className="pointer-events-none absolute inset-x-[6%] inset-y-[8%] rounded-[50%] shadow-2xl"
+            style={{
+              background: "radial-gradient(ellipse at 50% 35%, #232120 0%, #161513 70%)",
+              transform: "rotateX(50deg)",
+              transformOrigin: "center",
+            }}
+          />
 
-      {error && <p className="mb-4 text-center font-mono text-xs text-red-700">{error}</p>}
-
-      {/* players */}
-      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {state.players.map((p) => {
-          const hand = round?.hands.find((h) => h.playerId === p.id);
-          const isTurn = round?.status === "player_turns" && round.turnSeatIndex === p.seatIndex;
-          const isMe = p.userId === you;
-          return (
-            <div
-              key={p.id}
-              className={`rounded-md border p-3 transition ${
-                isTurn ? "border-ink bg-line/40" : "border-line"
-              }`}
-            >
-              <div className="flex items-baseline justify-between">
-                <span className="font-mono text-xs text-ink">
-                  {p.displayName}
-                  {isMe ? " (you)" : ""}
-                  {p.userId === state.hostUserId ? " · host" : ""}
-                </span>
-                <span className="font-mono text-xs text-fog">{p.balance} pts</span>
-              </div>
-
-              {hand && hand.cards.length > 0 && (
-                <>
-                  <div className="mt-2 flex gap-1.5">
-                    {hand.cards.map((c, i) => (
-                      <PlayingCard key={i} card={c} small />
+          <div className="relative h-[420px] w-full">
+            {/* dealer, head of the table */}
+            <div className="absolute left-1/2 top-2 w-64 -translate-x-1/2 text-center">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-fog">dealer</p>
+              <div className="mt-2 flex justify-center gap-2">
+                {round && round.status !== "betting" ? (
+                  <>
+                    {round.dealerHand.map((c, i) => (
+                      <PlayingCard key={i} card={c} />
                     ))}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between font-mono text-[11px] text-fog">
-                    <span>
-                      bet {hand.bet}
-                      {hand.doubled ? " (doubled)" : ""} · total {hand.total}
-                    </span>
-                    <span
-                      className={
-                        hand.status === "bust" || hand.result === "lose"
-                          ? "text-red-700"
-                          : hand.result === "win" || hand.result === "blackjack_win"
-                          ? "text-green-700"
-                          : "text-fog"
-                      }
-                    >
-                      {hand.result
-                        ? hand.result === "blackjack_win"
-                          ? `blackjack! +${hand.payout}`
-                          : hand.result === "win"
-                          ? `win +${hand.payout}`
-                          : hand.result === "push"
-                          ? "push"
-                          : "lose"
-                        : hand.status}
-                    </span>
-                  </div>
-                </>
+                    {!round.dealerHoleRevealed && <PlayingCard faceDown />}
+                  </>
+                ) : (
+                  <p className="font-mono text-xs text-fog">waiting for the next round…</p>
+                )}
+              </div>
+              {round?.dealerHoleRevealed && round.dealerTotal !== null && (
+                <p className="mt-1.5 font-mono text-xs text-fog">{round.dealerTotal}</p>
+              )}
+              {round?.dealerMessage && (
+                <p className="mt-3 font-display text-base italic text-ink">"{round.dealerMessage}"</p>
               )}
             </div>
-          );
-        })}
+
+            {/* seats around the oval */}
+            {state.players.map((p) => {
+              const hand = round?.hands.find((h) => h.playerId === p.id);
+              const isTurn = round?.status === "player_turns" && round.turnSeatIndex === p.seatIndex;
+              const isMe = p.userId === you;
+              const pos = getSeatPosition(p.seatIndex, state.players.length);
+              return (
+                <div
+                  key={p.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+                >
+                  <PlayerSeat player={p} hand={hand} isTurn={!!isTurn} isMe={isMe} isHost={p.userId === state.hostUserId} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* mobile: same info, plain stacked list — a tilted oval would
+          just be cramped and hard to tap on a small screen */}
+      <div className="mb-8 sm:hidden">
+        <div className="rounded-lg bg-ink px-4 py-6 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-paper/40">dealer</p>
+          <div className="mt-3 flex justify-center gap-2">
+            {round && round.status !== "betting" ? (
+              <>
+                {round.dealerHand.map((c, i) => (
+                  <PlayingCard key={i} card={c} />
+                ))}
+                {!round.dealerHoleRevealed && <PlayingCard faceDown />}
+              </>
+            ) : (
+              <p className="font-mono text-xs text-paper/30">waiting for the next round…</p>
+            )}
+          </div>
+          {round?.dealerHoleRevealed && round.dealerTotal !== null && (
+            <p className="mt-2 font-mono text-xs text-paper/60">{round.dealerTotal}</p>
+          )}
+          {round?.dealerMessage && (
+            <p className="mt-4 font-display text-lg italic text-paper/90">"{round.dealerMessage}"</p>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          {state.players.map((p) => {
+            const hand = round?.hands.find((h) => h.playerId === p.id);
+            const isTurn = round?.status === "player_turns" && round.turnSeatIndex === p.seatIndex;
+            const isMe = p.userId === you;
+            return (
+              <PlayerSeat
+                key={p.id}
+                player={p}
+                hand={hand}
+                isTurn={!!isTurn}
+                isMe={isMe}
+                isHost={p.userId === state.hostUserId}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* controls */}
       <div className="rounded-md border border-line p-4">
+        {error && <p className="mb-3 font-mono text-xs text-red-700">{error}</p>}
         {!me ? (
           <button
             onClick={() => call("/join")}
