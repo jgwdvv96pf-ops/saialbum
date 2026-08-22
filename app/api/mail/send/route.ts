@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { sendMessage } from "@/lib/mail/zoho";
+import { wrapEmailBody } from "@/lib/mail/template";
 
 export async function POST(req: NextRequest) {
   if (!(await isAuthed())) {
@@ -18,7 +19,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendMessage({ to: to.trim(), subject: subject.trim(), content, fromAddress });
+    await sendMessage({
+      to: to.trim(),
+      subject: subject.trim(),
+      content: wrapEmailBody(content),
+      fromAddress,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[mail send error]", err);

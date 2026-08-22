@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { sendReplyOrForward } from "@/lib/mail/zoho";
+import { wrapEmailBody } from "@/lib/mail/template";
 
 export async function POST(req: NextRequest) {
   if (!(await isAuthed())) {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       fromAddress,
       to: to.trim(),
       subject: subject.trim(),
-      content,
+      content: wrapEmailBody(content),
     });
     return NextResponse.json({ ok: true });
   } catch (err) {
