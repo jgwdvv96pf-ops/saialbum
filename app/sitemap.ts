@@ -19,6 +19,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: "https://saiaj.in/privacypolicy",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
+    {
+      url: "https://saiaj.in/termsandconditions",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
     ...products
       .filter((p) => !p.sold)
       .map((p) => ({
