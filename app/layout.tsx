@@ -79,6 +79,14 @@ export default function RootLayout({
           <p className="font-display text-sm italic text-fog">
             to love is to be loved
           </p>
+          <div className="absolute bottom-6 right-6 flex gap-3 font-mono text-[10px] text-fog/60">
+            <a href="/privacypolicy" className="transition hover:text-ink">
+              privacy
+            </a>
+            <a href="/termsandconditions" className="transition hover:text-ink">
+              terms
+            </a>
+          </div>
         </footer>
         <Analytics />
         <SpeedInsights />
