@@ -26,6 +26,12 @@ export async function listFolderFiles(): Promise<DriveFile[]> {
     fields: "files(id,name,mimeType,createdTime,thumbnailLink)",
     orderBy: "createdTime desc",
     pageSize: "200",
+    // Without these two, Google silently returns zero results (no
+    // error) for a folder that lives inside a Shared Drive rather
+    // than regular "My Drive" — a genuinely easy way to see this
+    // exact "nothing here" symptom with a perfectly valid folder ID.
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
   });
 
   const res = await fetch(`${API_BASE}/files?${params}`, {
@@ -55,7 +61,7 @@ export async function listFolderFiles(): Promise<DriveFile[]> {
 export async function getThumbnail(fileId: string): Promise<{ body: ArrayBuffer; contentType: string } | null> {
   const accessToken = await getValidAccessToken();
 
-  const metaRes = await fetch(`${API_BASE}/files/${fileId}?fields=thumbnailLink`, {
+  const metaRes = await fetch(`${API_BASE}/files/${fileId}?fields=thumbnailLink&supportsAllDrives=true`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!metaRes.ok) return null;
