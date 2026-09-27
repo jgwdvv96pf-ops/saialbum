@@ -13,6 +13,7 @@ type DriveFile = {
 
 export default function DriveGallery() {
   const [files, setFiles] = useState<DriveFile[]>([]);
+  const [diagnostic, setDiagnostic] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,6 +23,7 @@ export default function DriveGallery() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load");
         setFiles(data.files);
+        if (data.diagnostic) setDiagnostic(data.diagnostic);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
@@ -53,7 +55,9 @@ export default function DriveGallery() {
       <h1 className="mb-8 font-display text-3xl italic">drive</h1>
 
       {files.length === 0 ? (
-        <p className="font-mono text-xs text-fog">nothing in this folder yet</p>
+        <p className="max-w-md font-mono text-xs text-fog">
+          {diagnostic || "nothing in this folder yet"}
+        </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {files.map((f) => (

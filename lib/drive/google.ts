@@ -9,6 +9,72 @@ export type DriveFile = {
   hasThumbnail: boolean;
 };
 
+// Distinguishes the several different reasons a folder can come back
+// "empty" — Google's API returns 200-with-zero-results identically
+// whether the folder ID is wrong, the account can't see it, or it's
+// genuinely empty of images/videos, so this actually checks each case
+// instead of leaving all three looking the same.
+export type FolderDiagnostic =
+  | { ok: true }
+  | { ok: false; reason: "not_found_or_no_access"; detail: string }
+  | { ok: false; reason: "not_a_folder"; detail: string }
+  | { ok: false; reason: "empty_folder" }
+  | { ok: false; reason: "no_matching_file_types"; totalItems: number };
+
+export async function diagnoseFolder(): Promise<FolderDiagnostic> {
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!folderId) {
+    return { ok: false, reason: "not_found_or_no_access", detail: "GOOGLE_DRIVE_FOLDER_ID isn't set" };
+  }
+  const accessToken = await getValidAccessToken();
+
+  // Step 1: does this ID even resolve to something the connected
+  // account can see?
+  const metaRes = await fetch(
+    `${API_BASE}/files/${folderId}?fields=id,name,mimeType&supportsAllDrives=true`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!metaRes.ok) {
+    const body = await metaRes.text();
+    return {
+      ok: false,
+      reason: "not_found_or_no_access",
+      detail: `Google returned ${metaRes.status}: ${body}`,
+    };
+  }
+  const meta = await metaRes.json();
+  if (meta.mimeType !== "application/vnd.google-apps.folder") {
+    return { ok: false, reason: "not_a_folder", detail: `That ID is a "${meta.mimeType}", not a folder` };
+  }
+
+  // Step 2: does it have ANY children at all (regardless of type)?
+  const allParams = new URLSearchParams({
+    q: `'${folderId}' in parents and trashed = false`,
+    fields: "files(id,mimeType)",
+    pageSize: "50",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  const allRes = await fetch(`${API_BASE}/files?${allParams}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const allData = allRes.ok ? await allRes.json() : { files: [] };
+  const allFiles = allData.files || [];
+
+  if (allFiles.length === 0) {
+    return { ok: false, reason: "empty_folder" };
+  }
+
+  const hasImageOrVideo = allFiles.some(
+    (f: any) => f.mimeType.startsWith("image/") || f.mimeType.startsWith("video/")
+  );
+  if (!hasImageOrVideo) {
+    return { ok: false, reason: "no_matching_file_types", totalItems: allFiles.length };
+  }
+
+  return { ok: true };
+}
+
 // Only ever queries the one folder ID you configure — the OAuth
 // scope technically grants read access to the whole Drive (Google
 // doesn't offer a "single folder" scope for reading pre-existing
